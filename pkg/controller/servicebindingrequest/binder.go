@@ -519,7 +519,7 @@ func (b *binder) update(objs *unstructured.UnstructuredList) ([]*unstructured.Un
 		updatedObj = setSBRAnnotations(sbrNamespacedName, updatedObj)
 		var err error
 		if b.sbr.Spec.ApplicationSelector.BindingPath.CustomSecretPath != nil {
-			_, err = b.updateSecretField(&obj)
+			_, err = b.updateSecretField(updatedObj)
 			if err != nil {
 				return nil, err
 			}
