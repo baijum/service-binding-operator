@@ -325,17 +325,6 @@ func TestBinderNew(t *testing.T) {
 		// making sure no volume mounts are present
 		require.Nil(t, c.VolumeMounts)
 	})
-
-	t.Run("podspec-path-default", func(t *testing.T) {
-		containersPath := binder.getContainersPath()
-		expectedContainersPath := []string{"spec", "template", "spec", "containers"}
-		require.True(t, reflect.DeepEqual(containersPath, expectedContainersPath))
-
-		volumesPath := binder.getVolumesPath()
-		expectedVolumesPath := []string{"spec", "template", "spec", "volumes"}
-		require.True(t, reflect.DeepEqual(volumesPath, expectedVolumesPath))
-	})
-
 }
 
 func TestBinderAppendEnvVar(t *testing.T) {

@@ -3,6 +3,7 @@ package servicebindingrequest
 import (
 	"context"
 	"encoding/base64"
+	"reflect"
 	"testing"
 
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
@@ -69,39 +70,6 @@ func TestServiceBinder_Bind(t *testing.T) {
 		wantConditions []wantedCondition
 
 		wantResult *reconcile.Result
-	}
-
-	assertSchemaPathResolution := func(args args, sb serviceBinder) func(*testing.T) {
-		return func(t *testing.T) {
-			providedBindingPath := args.options.sbr.Spec.ApplicationSelector.BindingPath
-			computedBindingPath := sb.sbr.Spec.ApplicationSelector.BindingPath
-
-			if providedBindingPath != nil {
-
-				// user has provided BindingPath information explicitly
-				require.True(t, providedBindingPath.PodSpecPath != nil ||
-					providedBindingPath.CustomSecretPath != nil)
-
-				// ensure the provided values have not been adulterated.
-				if providedBindingPath.PodSpecPath != nil {
-					require.Equal(t, providedBindingPath.PodSpecPath.Containers,
-						computedBindingPath.PodSpecPath.Containers)
-					require.Equal(t, providedBindingPath.PodSpecPath.Volumes,
-						computedBindingPath.PodSpecPath.Volumes)
-
-				} else if computedBindingPath.CustomSecretPath != nil {
-					// ensure the provided values have not been adulterated.
-					require.Equal(t, providedBindingPath.CustomSecretPath,
-						computedBindingPath.CustomSecretPath)
-				}
-			} else {
-				// user has NOT provided BindingPath information explicitly
-
-				require.Equal(t, v1alpha1.DefaultPathToContainers, computedBindingPath.PodSpecPath.Containers)
-				require.Equal(t, v1alpha1.DefaultPathToVolumes, computedBindingPath.PodSpecPath.Volumes)
-				require.Nil(t, computedBindingPath.CustomSecretPath)
-			}
-		}
 	}
 
 	// assertBind exercises the bind functionality
@@ -605,4 +573,34 @@ func TestServiceBinder_Bind(t *testing.T) {
 			},
 		},
 	}))
+}
+
+func TestInitApplicationSelector(t *testing.T) {
+	ns := "binder"
+	name := "service-binding-request"
+	matchLabels := map[string]string{
+		"connects-to": "database",
+		"environment": "binder",
+	}
+
+	f := mocks.NewFake(t, ns)
+	sbr := f.AddMockedServiceBindingRequest(name, nil, "ref", "", deploymentsGVR, matchLabels)
+	initApplicationSelector(&sbr.Spec.ApplicationSelector)
+
+	binder := newBinder(
+		context.TODO(),
+		f.FakeDynClient(),
+		sbr,
+		[]string{},
+		testutils.BuildTestRESTMapper(),
+	)
+
+	containersPath := binder.getContainersPath()
+	expectedContainersPath := []string{"spec", "template", "spec", "containers"}
+	require.True(t, reflect.DeepEqual(containersPath, expectedContainersPath))
+
+	volumesPath := binder.getVolumesPath()
+	expectedVolumesPath := []string{"spec", "template", "spec", "volumes"}
+	require.True(t, reflect.DeepEqual(volumesPath, expectedVolumesPath))
+
 }
