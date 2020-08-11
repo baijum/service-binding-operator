@@ -101,7 +101,7 @@ func TestBinderNew(t *testing.T) {
 
 	f := mocks.NewFake(t, ns)
 	sbr := f.AddMockedServiceBindingRequest(name, nil, "ref", "", deploymentsGVR, matchLabels)
-	sbr.Spec.ApplicationSelector.SetDefaults()
+	initApplicationSelector(&sbr.Spec.ApplicationSelector)
 	f.AddMockedUnstructuredDeployment("ref", matchLabels)
 
 	binder := newBinder(

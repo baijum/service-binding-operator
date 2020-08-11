@@ -9,6 +9,7 @@ import (
 	"gotest.tools/assert/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -371,6 +372,35 @@ func (b *serviceBinder) setApplicationObjects(
 	sbrStatus.Applications = boundApps
 }
 
+// set default value for application selector
+func initApplicationSelector(applicationSelector *v1alpha1.ApplicationSelector) {
+	if applicationSelector.LabelSelector == nil {
+		applicationSelector.LabelSelector = &metav1.LabelSelector{}
+	}
+	if applicationSelector.BindingPath == nil {
+		applicationSelector.BindingPath = &v1alpha1.BindingPath{
+			PodSpecPath: &v1alpha1.PodSpecPath{
+				Containers: v1alpha1.DefaultPathToContainers,
+				Volumes:    v1alpha1.DefaultPathToVolumes,
+			},
+		}
+	} else {
+		if applicationSelector.BindingPath.PodSpecPath == nil {
+			applicationSelector.BindingPath.PodSpecPath = &v1alpha1.PodSpecPath{
+				Containers: v1alpha1.DefaultPathToContainers,
+				Volumes:    v1alpha1.DefaultPathToVolumes,
+			}
+		} else {
+			if applicationSelector.BindingPath.PodSpecPath.Containers == "" {
+				applicationSelector.BindingPath.PodSpecPath.Containers = v1alpha1.DefaultPathToContainers
+			}
+			if applicationSelector.BindingPath.PodSpecPath.Volumes == "" {
+				applicationSelector.BindingPath.PodSpecPath.Volumes = v1alpha1.DefaultPathToVolumes
+			}
+		}
+	}
+}
+
 // buildServiceBinder creates a new binding manager according to options.
 func buildServiceBinder(
 	ctx context.Context,
@@ -401,7 +431,7 @@ func buildServiceBinder(
 		options.restMapper,
 	)
 
-	options.sbr.Spec.ApplicationSelector.SetDefaults()
+	initApplicationSelector(&options.sbr.Spec.ApplicationSelector)
 
 	return &serviceBinder{
 		logger:    options.logger,
