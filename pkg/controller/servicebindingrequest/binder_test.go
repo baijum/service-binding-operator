@@ -84,7 +84,7 @@ func TestBindingCustomSecretPath(t *testing.T) {
 
 		customSecretPathSlice := strings.Split(customSecretPath, ".")
 
-		customSecretInMeta, found, err := unstructured.NestedFieldCopy(list.Items[0].Object, customSecretPathSlice...)
+		customSecretInMeta, found, err := unstructured.NestedFieldCopy(updatedDeployment.Object, customSecretPathSlice...)
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, name, customSecretInMeta)
