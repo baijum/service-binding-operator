@@ -109,7 +109,7 @@ type BindingPath struct {
 	// CustomSecret defines the path to a string field where
 	// the secret needs to be assigned.
 	// +optional
-	CustomSecretPath *string `json:"customSecretPath,omitempty"`
+	CustomSecretPath string `json:"customSecretPath,omitempty"`
 }
 
 // PodSpecPath overrides the default podSpec path
