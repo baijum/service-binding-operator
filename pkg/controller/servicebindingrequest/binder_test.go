@@ -221,9 +221,9 @@ func TestBinderNew(t *testing.T) {
 
 		sbrName, err := getSBRNamespacedNameFromObject(&deployment)
 		require.NoError(t, err)
-		require.Equal(t, types.NamespacedName{}, sbrName)
+		require.Equal(t, types.NamespacedName{Name: name, Namespace: ns}, sbrName)
 
-		containers, found, err := unstructured.NestedSlice(list.Items[0].Object, binder.getContainersPath()...)
+		containers, found, err := unstructured.NestedSlice(updatedObjects[0].Object, binder.getContainersPath()...)
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Len(t, containers, 1)
@@ -245,7 +245,6 @@ func TestBinderNew(t *testing.T) {
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uSecret.Object, &s)
 		require.NoError(t, err)
 		require.Equal(t, s.ObjectMeta.ResourceVersion, envVar.Value)
-
 	})
 
 	t.Run("update with extra modifier present", func(t *testing.T) {

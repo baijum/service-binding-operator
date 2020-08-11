@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"gotest.tools/assert/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -508,13 +509,14 @@ func (b *binder) update(objs *unstructured.UnstructuredList) ([]*unstructured.Un
 	updatedObjs := []*unstructured.Unstructured{}
 
 	for _, obj := range objs.Items {
-		// store a copy of the original object to later be used in a comparison
-		originalObj := obj.DeepCopy()
+		// modify the copy of the original object and use the original one later for comparison
+		updatedObj := obj.DeepCopy()
 		name := obj.GetName()
 		log := b.logger.WithValues("Obj.Name", name, "Obj.Kind", obj.GetKind())
 		log.Debug("Inspecting object...")
 
-		var updatedObj *unstructured.Unstructured
+		sbrNamespacedName := types.NamespacedName{Namespace: b.sbr.GetNamespace(), Name: b.sbr.GetName()}
+		updatedObj = setSBRAnnotations(sbrNamespacedName, updatedObj)
 		var err error
 		if b.sbr.Spec.ApplicationSelector.BindingPath.CustomSecretPath != nil {
 			_, err = b.updateSecretField(&obj)
@@ -523,18 +525,18 @@ func (b *binder) update(objs *unstructured.UnstructuredList) ([]*unstructured.Un
 			}
 		}
 
-		updatedObj, err = b.updateSpecContainers(&obj)
+		updatedObj, err = b.updateSpecContainers(updatedObj)
 		if err != nil {
 			return nil, err
 		}
 
 		if len(b.volumeKeys) > 0 {
-			if updatedObj, err = b.updateSpecVolumes(&obj); err != nil {
+			if updatedObj, err = b.updateSpecVolumes(updatedObj); err != nil {
 				return nil, err
 			}
 		}
 
-		if specsAreEqual, err := nestedUnstructuredComparison(originalObj, updatedObj, "spec"); err != nil {
+		if specsAreEqual, err := nestedUnstructuredComparison(&obj, updatedObj, "spec"); err != nil {
 			log.Error(err, "")
 			continue
 		} else if specsAreEqual {
